@@ -1,24 +1,32 @@
-## Merges the training and the test sets to create one data set.
-## Extracts only the measurements on the mean and standard deviation for each measurement. 
-## Uses descriptive activity names to name the activities in the data set
-## Appropriately labels the data set with descriptive activity names. 
-## Creates a second, independent tidy data set with the average of each variable for each activity and each subject. 
-
 # Todo
 # 
 # label factor activity with descriptive levels
 # label columns?
 # ---------------
 # aggregate: mean of each variable by subject and activity
-
+#
+# Documentation in Readme/Code: 
+# "make a choice and document reason ("mean", "std")
+#     ("Extracts only the measurements on the mean and standard deviation for each measurement.")
+# document assumptions about input data (zip file, online, where it is etc):
+#     "2) We assume that files have been downloard and extracted to a local directory."
 
 run_analysis <- function(directory = "uci-har-dataset") {
   setwd(directory)
   
+  X <- load_and_clean()
+  A <- aggregate.subject.activity(X)
+  list(X, A)
+} 
+
+# load and clean data
+
+load_and_clean <- function(){
   # read features names
   features <- read.table("features.txt", col.names=c("f.id", "feature"))
   
   ####### TEST data ##########################################
+  
   # read fixed width file X_test
   widths <- rep(16, 561)
   X.test <- read.fwf("test/X_test.txt", widths, col.names=features$feature)
@@ -28,7 +36,7 @@ run_analysis <- function(directory = "uci-har-dataset") {
   # read subject data and add it to X.test
   subject.test <- read.table("test/subject_test.txt", col.names="subject")
   X.test$subject <- subject.test$subject
-
+  
   # read y data and add it to X.test as "activity"
   y.test <- read.table("test/y_test.txt", col.names="activity")
   X.test$activity <- y.test$activity
@@ -61,4 +69,16 @@ run_analysis <- function(directory = "uci-har-dataset") {
   activity <- factor( X$activity, levels=c(1:6), labels=labels, ordered=TRUE)
   X$activity <- activity
   X
+}
+
+aggregate.subject.activity <- function(X) {
+  
+  # aggregate by subject and activity, but throw test and train cases together;
+  # so we need to remove the column test.train:
+  tmp.df <- X[ colnames(X) != "test.train"]
+  
+  A <- aggregate(. ~ tmp.df$activity + tmp.df$subject, data=tmp.df, FUN=mean)
+  A <- A[,c(1:2, 5:dim(A)[2])]    # get rid of superfluous columns 3 and 4
+  names(A) <- sub("^tmp.df\\$", "", names(A))  # rename columns  
+  A[ order(A$activity, A$subject), ]  # sort by activity, then subject
 }
