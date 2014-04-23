@@ -1,26 +1,39 @@
-# Todo
-# 
-# label factor activity with descriptive levels
-# label columns?
-# ---------------
-# aggregate: mean of each variable by subject and activity
-#
-# Documentation in Readme/Code: 
-# "make a choice and document reason ("mean", "std")
-#     ("Extracts only the measurements on the mean and standard deviation for each measurement.")
-# document assumptions about input data (zip file, online, where it is etc):
-#     "2) We assume that files have been downloard and extracted to a local directory."
-
+# Sets the working directory, loads and cleans the data, and
+# calculates the mean of each variable, aggregating over activity and subject.
+# Expects a character parameter specifying the directory that contains the data set
+#   (default: "uci-har-dataset")
+# Returns a list with 2 elements:
+#   (1) the tidy data set
+#   (2) the mean data, aggregated by activity and subject
 run_analysis <- function(directory = "uci-har-dataset") {
   setwd(directory)
   
   X <- load_and_clean()
-  A <- aggregate.subject.activity(X)
+  A <- average.by.activity.and.subject(X)
   list(X, A)
 } 
 
-# load and clean data
 
+
+# Loads the data and returns a tidy data frame.
+#
+# Assumes the following files to be in the working directory:
+# * features.txt
+# * test/X_test.txt
+# * test/subject_test.txt
+# * test/y_test.txt
+# * train/X_train.txt
+# * train/subject_train.txt
+# * train/y_train.txt
+# Loads and merges test data and train data. Adds 
+# * a column to keep track of which case is a training case or a test case, respectively. 
+# * a column for the activity, and
+# * a column for the subject.
+# Then drops all variables that aren't standard deviations or means of measurements. 
+# Then labels the activity codes and turns the activity column into a factor.
+#
+# Returns a data frame with columns activity, subject, test.train, and the means and
+# standard deviations of the measurements.
 load_and_clean <- function(){
   # read features names
   features <- read.table("features.txt", col.names=c("f.id", "feature"))
@@ -64,6 +77,10 @@ load_and_clean <- function(){
   keep = c("subject", "test.train", "activity", mean.cols, std.cols)
   X <- X[keep]
   
+  # beautify column names by replacing ... and .. with a single .
+  names(X) <- sub("\\.\\.\\.", ".", names(X))
+  names(X) <- sub("\\.\\.", ".", names(X))
+  
   # label activity
   labels <- c("walking", "walking.upstairs", "walking.downstairs", "sitting", "standing", "laying")
   activity <- factor( X$activity, levels=c(1:6), labels=labels, ordered=TRUE)
@@ -71,10 +88,17 @@ load_and_clean <- function(){
   X
 }
 
-aggregate.subject.activity <- function(X) {
+
+# Groups the data frame X by activity and subject, calculating the mean for the 
+# measurement columns.
+# The column "test.train" is dropped (if it exists).
+# Expects a data frame with columns "activity" and "subject". 
+# Returns a data frame that contains the mean of each measurement grouped 
+# (and ordered) by activity and subject.
+average.by.activity.and.subject <- function(X) {
   
   # aggregate by subject and activity, but throw test and train cases together;
-  # so we need to remove the column test.train:
+  # so we need to remove the column "test.train":
   tmp.df <- X[ colnames(X) != "test.train"]
   
   A <- aggregate(. ~ tmp.df$activity + tmp.df$subject, data=tmp.df, FUN=mean)
