@@ -98,7 +98,7 @@ load_and_clean <- function(){
 average.by.activity.and.subject <- function(X) {
   
   # aggregate by subject and activity, but throw test and train cases together;
-  # so we need to remove the column "test.train":
+  # so remove column "test.train":
   tmp.df <- X[ colnames(X) != "test.train"]
   
   A <- aggregate(. ~ tmp.df$activity + tmp.df$subject, data=tmp.df, FUN=mean)
