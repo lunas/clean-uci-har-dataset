@@ -5,11 +5,18 @@
 # Returns a list with 2 elements:
 #   (1) the tidy data set
 #   (2) the mean data, aggregated by activity and subject
+#   Also writes both data frames to csv files in specified working directory.
 run_analysis <- function(directory = "uci-har-dataset") {
   setwd(directory)
   
   X <- load_and_clean()
   A <- average.by.activity.and.subject(X)
+  
+  # save to csv
+  write.csv(X, "uci-har-tidy.csv")
+  write.csv(A, "uci-har-means.csv")
+  
+  # return both data frames in a list
   list(X, A)
 } 
 
